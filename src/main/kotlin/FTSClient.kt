@@ -15,6 +15,9 @@ class FTSClient(private var ip: String, private var port: Int) {
     }
 
     fun requestFile(path: String, pathTo: File): Boolean {
+        if(pathTo.parentFile != null && !pathTo.parentFile.exists() && pathTo.isDirectory){
+            pathTo.parentFile.mkdirs();
+        }
         pathTo.createNewFile();
         val socket = getSocket();
         val instream = DataInputStream(socket.getInputStream());

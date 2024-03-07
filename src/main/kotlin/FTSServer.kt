@@ -20,8 +20,18 @@ class FTSServer(port: Int) : Runnable {
         serverThread.start()
     }
 
+    /**
+     * Serve um arquivo
+     */
     fun serveFile(file: File, path: String) {
         filesAvaliable.put(path, file);
+    }
+
+    /**
+     * Remove um arquivo
+     */
+    fun removeFile(path: String){
+        filesAvaliable.remove(path);
     }
 
     /**
@@ -44,7 +54,7 @@ class FTSServer(port: Int) : Runnable {
                     out.writeBoolean(true);
                     out.writeInt(byteArray.size);
                     var loc = 0;
-                    while(loc != -1){
+                    while (loc != -1) {
                         bufferedOut.write(byteArray, 0, loc);
                         loc = inputStreamFile.read(byteArray);
                     }
