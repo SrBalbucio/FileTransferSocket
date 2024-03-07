@@ -7,24 +7,30 @@ import java.io.DataOutputStream
 import java.io.File
 import java.io.FileInputStream
 import java.net.ServerSocket
-import java.net.Socket
+import java.util.AbstractMap
 
 class FTSServer(port: Int) : Runnable {
 
     private val serverSocket: ServerSocket = ServerSocket(port);
-    private val filesAvaliable: MutableMap<String, File> = mutableMapOf(); // FILE E PATH
+    private val filesAvaliable: MutableMap<String, AbstractMap.SimpleEntry<File, Boolean>> = mutableMapOf(); // FILE E PATH
     private val serverThread: Thread = Thread(this);
+    private var running: Boolean = false;
 
     init {
         serverThread.name = "FTS-SERVER-THREAD"
         serverThread.start()
+        running = true;
+    }
+
+    fun serveFile(file: File, path: String) {
+        serveFile(file, path, true);
     }
 
     /**
      * Serve um arquivo
      */
-    fun serveFile(file: File, path: String) {
-        filesAvaliable.put(path, file);
+    fun serveFile(file: File, path: String, rmAfterDownload: Boolean) {
+        filesAvaliable.put(path, AbstractMap.SimpleEntry(file, rmAfterDownload));
     }
 
     /**
@@ -32,6 +38,13 @@ class FTSServer(port: Int) : Runnable {
      */
     fun removeFile(path: String){
         filesAvaliable.remove(path);
+    }
+
+    fun close(){
+        running = false;
+        serverSocket.close();
+        serverThread.interrupt();
+        filesAvaliable.clear();
     }
 
     /**
@@ -47,7 +60,8 @@ class FTSServer(port: Int) : Runnable {
             if (operationCode == 1) {
                 val path = input.readUTF();
                 if (filesAvaliable.containsKey(path)) {
-                    val file = filesAvaliable[path];
+                    val file = filesAvaliable[path]!!.key;
+                    val rm = filesAvaliable[path]!!.value;
                     val byteArray = ByteArray(file!!.length().toInt());
                     val inputStreamFile = BufferedInputStream(FileInputStream(file));
                     val bufferedOut = BufferedOutputStream(out);
@@ -60,6 +74,9 @@ class FTSServer(port: Int) : Runnable {
                     }
                     bufferedOut.flush();
                     inputStreamFile.close();
+                    if(rm){
+                        filesAvaliable.remove(path);
+                    }
                 } else {
                     out.writeBoolean(false);
                 }
